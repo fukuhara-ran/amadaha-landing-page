@@ -53,6 +53,11 @@ export default function CheckAvailability() {
     },
   };
 
+  // Type guard function to check if a string is a valid RoomType
+  const isValidRoomType = (roomType: string): roomType is RoomType => {
+    return roomOptions.some((option) => option.value === roomType);
+  };
+
   const checkRoomAvailability = (
     roomType: string,
     checkIn: string,
@@ -60,8 +65,13 @@ export default function CheckAvailability() {
   ) => {
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    const unavailablePeriods =
-      roomAvailability[roomType]?.unavailablePeriods || [];
+
+    // Type check before accessing roomAvailability
+    if (!isValidRoomType(roomType)) {
+      return { available: false, error: "Invalid room type" };
+    }
+
+    const unavailablePeriods = roomAvailability[roomType].unavailablePeriods;
 
     for (const period of unavailablePeriods) {
       const periodStart = new Date(period.start);
@@ -103,6 +113,7 @@ export default function CheckAvailability() {
     const roomLabel = roomOptions.find(
       (option) => option.value === selectedRoom
     )?.label;
+
     const availability = checkRoomAvailability(
       selectedRoom,
       checkInDate,
@@ -118,13 +129,21 @@ export default function CheckAvailability() {
       );
     } else {
       setIsAvailable(false);
-      const conflictStart = formatDateForDisplay(
-        availability.conflictPeriod.start
-      );
-      const conflictEnd = formatDateForDisplay(availability.conflictPeriod.end);
-      setAlertMessage(
-        `${roomLabel} is not available from ${conflictStart} until ${conflictEnd}. Please select different dates.`
-      );
+      if (availability.conflictPeriod) {
+        const conflictStart = formatDateForDisplay(
+          availability.conflictPeriod.start
+        );
+        const conflictEnd = formatDateForDisplay(
+          availability.conflictPeriod.end
+        );
+        setAlertMessage(
+          `${roomLabel} is not available from ${conflictStart} until ${conflictEnd}. Please select different dates.`
+        );
+      } else {
+        setAlertMessage(
+          `${roomLabel} is not available for the selected dates. Please select different dates.`
+        );
+      }
     }
 
     setShowAlert(true);
